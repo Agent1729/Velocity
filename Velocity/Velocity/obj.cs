@@ -20,9 +20,9 @@ namespace Velocity
 	{
 		public Level level;
 
-		public Texture2D sprite;
+		public Texture2D mainSprite;
 		protected Texture2D blackPixel;
-		public string spriteName;
+		public string mainSpriteName;
 		protected Vector2 XY;
 		protected Vector2 WH;
 		public float width, height;
@@ -74,11 +74,11 @@ namespace Velocity
 			level.removeNewObj(this);
 		}
 
-		public void loadTexture(ContentManager Content) { doLoadTexture(Content); }
-		protected virtual void doLoadTexture(ContentManager Content)
+		public void loadTexture() { doLoadTexture(); }
+		protected virtual void doLoadTexture()
 		{
-			sprite = Content.Load<Texture2D>(spriteName);
-			blackPixel = Content.Load<Texture2D>("BlackPixel");
+			mainSprite = SpriteManager.getSprite(mainSpriteName);
+			blackPixel = SpriteManager.getSprite("BlackPixel");
 		}
 
 		public float x
@@ -439,7 +439,7 @@ namespace Velocity
 
 		protected virtual void doDraw(SpriteBatch spriteBatch, Camera c)
 		{
-			drawSprite(spriteBatch, c, sprite, drawP);
+			drawSprite(spriteBatch, c, mainSprite, drawP);
 		}
 
 		#region drawSprite

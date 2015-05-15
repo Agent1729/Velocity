@@ -43,7 +43,7 @@ namespace Velocity.Objects
 		protected override void init()
 		{
 			objType = "MovingPlatform";
-			spriteName = "wall_block";
+			mainSpriteName = "wall_block";
 			base_width = 16; base_height = 16;
 			width = base_width; height = base_height;
 			depth = -5;

@@ -39,7 +39,7 @@ namespace Velocity.Objects
 		protected override void init()
 		{
 			objType = "VelocityZone";
-			spriteName = "BlueCircle";
+			mainSpriteName = "BlueCircle";
 			spriteName2 = "OrangeCircle";
 			spriteName3 = "PurpleCircle";
 			spriteName4 = "LGreenCircle";
@@ -57,14 +57,14 @@ namespace Velocity.Objects
 			hasBeenFrictioned = false;
 		}
 
-		protected override void doLoadTexture(ContentManager Content)
+		protected override void doLoadTexture()
 		{
-			blueCircleSprite = Content.Load<Texture2D>(spriteName);
-			orangeCircleSprite = Content.Load<Texture2D>(spriteName2);
-			purpleCircleSprite = Content.Load<Texture2D>(spriteName3);
-			lgreenCircleSprite = Content.Load<Texture2D>(spriteName4);
-			redCircleSprite = Content.Load<Texture2D>(spriteName5);
-			greenCircleSprite = Content.Load<Texture2D>(spriteName6);
+			blueCircleSprite = SpriteManager.getSprite(mainSpriteName);
+			orangeCircleSprite = SpriteManager.getSprite(spriteName2);
+			purpleCircleSprite = SpriteManager.getSprite(spriteName3);
+			lgreenCircleSprite = SpriteManager.getSprite(spriteName4);
+			redCircleSprite = SpriteManager.getSprite(spriteName5);
+			greenCircleSprite = SpriteManager.getSprite(spriteName6);
 		}
 
 		public void rescale(float s)

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="Velocity">
+</Property><Property Name="Solution File" Value="C:\Users\Agent1729.Agent1729-PC\Documents\CPP\GIT\Velocity\Velocity.sln">
+</Property><Property Name="Date" Value="Thursday, May 14, 2015">
+</Property><Property Name="Time" Value="0:05 AM">
+</Property></Properties><Event ErrorLevel="0" Project="Velocity" Source="Velocity\Velocity\Velocity.csproj" Description="The project file does not require conversion.">
+</Event><Event ErrorLevel="3" Project="Velocity" Source="Velocity\Velocity\Velocity.csproj" Description="No Conversion Required">
+</Event><Event ErrorLevel="0" Project="VelocityContent" Source="Velocity\VelocityContent\VelocityContent.contentproj" Description="The project file does not require conversion.">
+</Event><Event ErrorLevel="3" Project="VelocityContent" Source="Velocity\VelocityContent\VelocityContent.contentproj" Description="No Conversion Required">
+</Event><Event ErrorLevel="2" Project="Velocity" Source="Velocity\Velocity\Velocity.csproj" Description="The project file 'C:\Users\Agent1729.Agent1729-PC\Documents\CPP\GIT\Velocity\Velocity\Velocity\Velocity.csproj' cannot be opened.&#xA;&#xA;The project type is not supported by this installation.">
+</Event><Event ErrorLevel="2" Project="VelocityContent" Source="Velocity\VelocityContent\VelocityContent.contentproj" Description="The project file 'C:\Users\Agent1729.Agent1729-PC\Documents\CPP\GIT\Velocity\Velocity\VelocityContent\VelocityContent.contentproj' cannot be opened.&#xA;&#xA;The project type is not supported by this installation.">
+</Event><Event ErrorLevel="0" Project="" Source="Velocity.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="Velocity.sln" Description="Converted">
+</Event></UpgradeLog>

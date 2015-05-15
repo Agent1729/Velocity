@@ -22,6 +22,7 @@ namespace Velocity
 		MouseState oldMouse;
 		Color backColor = Color.CornflowerBlue;
 		public Camera camera;
+		//public SpriteManager spriteManager;
 		public bool shouldQuit = false;
 		VelocityGame myGame;
 		protected int levelNum;
@@ -82,9 +83,12 @@ namespace Velocity
 			oldState = Keyboard.GetState();
 			oldMouse = Mouse.GetState();
 
-			//blackPixel = game.Content.Load<Texture2D>("BlackPixel");
-
 			camera = new Camera(0, 0, 1, gameWidth, gameHeight);
+
+			SpriteManager.init(game.Content);
+			SoundManager.init(game.Content);
+			FontManager.init(game.Content);
+			//blackPixel = SpriteManager.getSprite("BlackPixel");
 
 			leftKeys.Add(Keys.Left); leftKeys.Add(Keys.A);
 			rightKeys.Add(Keys.Right); rightKeys.Add(Keys.D);
@@ -452,7 +456,7 @@ namespace Velocity
 		{
 			o.level = this;
 
-			o.loadTexture(game.Content);
+			o.loadTexture();
 
 			if (o.takesControls)
 			{

@@ -75,7 +75,7 @@ namespace Velocity.Objects
 		{
 			objType = "Player";
 			//spriteName = "2048";
-			spriteName = "Player";
+			mainSpriteName = "Player";
 			cursorSpriteName = "cursor1";
 			velocityZoneSpriteName = "BlueCircle";
 			base_width = 70 / plrScale; base_height = 70 / plrScale;
@@ -92,16 +92,16 @@ namespace Velocity.Objects
 			base.init();
 		}
 
-		protected override void doLoadTexture(ContentManager Content)
+		protected override void doLoadTexture()
 		{
-			sprite = Content.Load<Texture2D>(spriteName);
-			cursorSprite = Content.Load<Texture2D>(cursorSpriteName);
-			velocityZoneSprite = Content.Load<Texture2D>(velocityZoneSpriteName);
-			blackPixel = Content.Load<Texture2D>("BlackPixel");
+			mainSprite = SpriteManager.getSprite(mainSpriteName);
+			cursorSprite = SpriteManager.getSprite(cursorSpriteName);
+			velocityZoneSprite = SpriteManager.getSprite(velocityZoneSpriteName);
+			blackPixel = SpriteManager.getSprite("BlackPixel");
 
-			font = Content.Load<SpriteFont>("Font1");
+			font = FontManager.getFont("Font1");
 
-			se = Content.Load<SoundEffect>("sound110");
+			se = SoundManager.getSound("sound110");
 		}
 
 		#region controls
@@ -339,7 +339,7 @@ namespace Velocity.Objects
 
 			//Self
 			getPaintColor();
-			drawSprite(spriteBatch, c, sprite, drawP, paintedColor, 1f / plrScale);
+			drawSprite(spriteBatch, c, mainSprite, drawP, paintedColor, 1f / plrScale);
 
 			//Cursor
 			drawSpriteNoZoom(spriteBatch, c, cursorSprite, new Vector2(ce.X, ce.Y));

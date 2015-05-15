@@ -29,7 +29,7 @@ namespace Velocity.Objects
 		protected override void init()
 		{
 			objType = "Box";
-			spriteName = "Box";
+			mainSpriteName = "Box";
 			base_width = 16; base_height = 16;
 			width = base_width; height = base_height;
 			depth = 5;

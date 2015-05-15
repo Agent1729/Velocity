@@ -773,7 +773,7 @@ namespace Velocity.Objects
 		protected override void doDraw(SpriteBatch spriteBatch, Camera c)
 		{
 			getPaintColor();
-			drawSprite(spriteBatch, c, sprite, drawP, paintedColor, 1);
+			drawSprite(spriteBatch, c, mainSprite, drawP, paintedColor, 1);
 		}
 
 		protected override void getPaintColor()

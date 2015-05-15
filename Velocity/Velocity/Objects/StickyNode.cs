@@ -29,7 +29,7 @@ namespace Velocity.Objects
 		protected override void init()
 		{
 			objType = "StickyNode";
-			spriteName = "StickyNode";
+			mainSpriteName = "StickyNode";
 			base_width = 4; base_height = 4;
 			width = base_width; height = base_height;
 			depth = 6;
@@ -151,7 +151,7 @@ namespace Velocity.Objects
 				x = stuckTo.x - xoff;
 				y = stuckTo.y - yoff;
 			}
-			drawSprite(spriteBatch, c, sprite, drawP);
+			drawSprite(spriteBatch, c, mainSprite, drawP);
 		}
 
 		public void setStats(Player _plr)

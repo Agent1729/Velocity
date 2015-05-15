@@ -34,7 +34,7 @@ namespace Velocity.Objects
 		protected override void init()
 		{
 			objType = "EnemyRocketLauncher";
-			spriteName = "RocketLauncher";
+			mainSpriteName = "RocketLauncher";
 			base_width = 16; base_height = 16;
 			width = base_width; height = base_height;
 			depth = 5;

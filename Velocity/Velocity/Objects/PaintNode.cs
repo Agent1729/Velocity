@@ -32,7 +32,7 @@ namespace Velocity.Objects
 		protected override void init()
 		{
 			objType = "PaintNode";
-			spriteName = "StickyNode";
+			mainSpriteName = "StickyNode";
 			base_width = 4; base_height = 4;
 			width = base_width; height = base_height;
 			depth = 5;
