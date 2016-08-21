@@ -190,7 +190,12 @@ namespace Velocity.Objects
 			if (!dead)
 			{
 				if (isShooting == 0)
+				{
 					vz.Clear();
+					vz.x = -1000;
+					vz.y = -1000;
+					vz.setRegions();
+				}
 				else
 					isShooting = 0;
 			}
@@ -235,6 +240,7 @@ namespace Velocity.Objects
 
 			capSpeed(terminalVelocity);
 			Move(xspeed * factor, yspeed * factor, true);
+			setRegions();
 
 			if (!dead)
 			{
@@ -279,6 +285,7 @@ namespace Velocity.Objects
 		protected override void doDraw(SpriteBatch spriteBatch, Camera c)
 		{
 			//drawText(spriteBatch, c, font, "HELLO WORLD!", XY, Color.White);
+			//drawText(spriteBatch, c, font, myRegions.Count.ToString(), XY, Color.Black);
 
 			//Cursor stats
 			MouseState ms = Mouse.GetState();
@@ -403,7 +410,8 @@ namespace Velocity.Objects
 					isShooting = 1;
 					Camera c = level.camera;
 					Vector2 cs = new Vector2(clickStarted.X, clickStarted.Y); cs *= c.zoom; cs += c.XY;
-					List<obj> colls = level.collisionListAtPoint(cs.X, cs.Y, false);
+					//List<obj> colls = level.collisionListAtPoint(cs.X, cs.Y, false);
+					List<obj> colls = level.collisionListAtCircle(cs.X, cs.Y, 15, false);
 					foreach (obj o in colls)
 					{
 						VelocityNode node = o as VelocityNode;
@@ -433,7 +441,8 @@ namespace Velocity.Objects
 					isShooting = 2;
 					Camera c = level.camera;
 					Vector2 cs = new Vector2(clickStarted.X, clickStarted.Y); cs *= c.zoom; cs += c.XY;
-					List<obj> colls = level.collisionListAtPoint(cs.X, cs.Y, false);
+					//List<obj> colls = level.collisionListAtPoint(cs.X, cs.Y, false);
+					List<obj> colls = level.collisionListAtCircle(cs.X, cs.Y, 15, false);
 					foreach (obj o in colls)
 					{
 						VelocityNode node = o as VelocityNode;
@@ -494,6 +503,7 @@ namespace Velocity.Objects
 						//vz.vFactor = 1f;
 						//vz.vGravFactor = (-.444f * scale + 2.65f);
 						velocityShot = shootVelocity(shotxspd, shotyspd, cs.X, cs.Y, scale, 1, -.444f * scale + 2.65f, 3);
+						//~ 1.4 to 2.6
 					}
 					else if ((gunSelected == 3) && (velocityShot == null))
 					{
@@ -553,6 +563,7 @@ namespace Velocity.Objects
 						//vz.vFactor = 1f;
 						//vz.vGravFactor = (.3f * scale);
 						velocityShot = shootVelocity(shotxspd, shotyspd, cs.X, cs.Y, scale, 1, .3f * scale, 4);
+						//~ .9 to .065
 					}
 					else if ((gunSelected == 3) && (hasGun3B) && (velocityShot == null))
 					{

@@ -16,6 +16,11 @@ namespace Velocity.Objects
 	public class StickyNode : VelocityNode
 	{
 		private float xoff, yoff;
+		private float px, py;
+
+		//stuckTo == null	//Not stuck to anything, flying back to player?
+		//stuckTo == this	//Not stuck to anything, flying to dest?
+		//stuckTo == obj	//Stuck to obj
 
 		public StickyNode(float _x, float _y, float _xspeed, float _yspeed) : base(_x, _y)
 		{
@@ -56,7 +61,10 @@ namespace Velocity.Objects
 					StickTo(other);
 			}
 			if (other.objType == "VelocityZone")
-				vZoneCollide(other, isPrimary);
+			{
+				if(other!=vz)
+					vZoneCollide(other, isPrimary);
+			}
 			if (other.objType == "Player")
 				if (stuckTo == null)
 					if(plr.nodeShot!=null)
@@ -65,9 +73,9 @@ namespace Velocity.Objects
 
 		private void StickTo(obj o)
 		{
-			xspeed = 0; yspeed = 0;
-
 			findStickCoords(o);
+
+			xspeed = 0; yspeed = 0;
 
 			xoff = o.x - x; yoff = o.y - y;
 			stuckTo = o;
@@ -78,15 +86,106 @@ namespace Velocity.Objects
 
 		private void findStickCoords(obj o)
 		{
-			if (Math.Abs(o.bb.l - x) < base_width)
-				x = o.bb.l;
-			else if (Math.Abs(o.bb.r - x) < base_width)
-				x = o.bb.r;
+			bool somethingSet = false;
+			Vector2 col;
+			float px1 = px;
+			float py1 = py;
+			if (x - px > 0) px1 -= width;
+			else px1 += width;
+			if (y - py > 0) py1 -= height;
+			else py1 += height;
 
-			if (Math.Abs(o.bb.u - y) < base_height)
-				y = o.bb.u;
-			else if (Math.Abs(o.bb.d - y) < base_height)
-				y = o.bb.d;
+			x = px;
+			y = py;
+			setRegions();
+			int tries = 0;
+			while(!(level.collisionList(this, true).Contains(o)))
+			{
+				x += xspeed * .1f;
+				y += yspeed * .1f;
+				setRegions();
+				tries++;
+				if(tries==1000)
+				{
+					x = px;
+					y = py;
+					break;
+				}
+			}
+			somethingSet = true;
+
+			if(!somethingSet)
+			if ((col = BB.lineCollisionPoint(px1, py1, x, y, o.bb.l, o.bb.u, o.bb.l, o.bb.d)).X != -1)		//Left
+			{
+				x = col.X;
+				y = col.Y;
+				somethingSet = true;
+			}
+			else if ((col = BB.lineCollisionPoint(px1, py1, x, y, o.bb.r, o.bb.u, o.bb.r, o.bb.d)).X != -1)	//Right
+			{
+				x = col.X;
+				y = col.Y;
+				somethingSet = true;
+			}
+			else if ((col = BB.lineCollisionPoint(px1, py1, x, y, o.bb.l, o.bb.u, o.bb.r, o.bb.u)).X != -1)	//Up
+			{
+				x = col.X;
+				y = col.Y;
+				somethingSet = true;
+			}
+			else if ((col = BB.lineCollisionPoint(px1, py1, x, y, o.bb.l, o.bb.d, o.bb.r, o.bb.d)).X != -1)	//Down
+			{
+				x = col.X;
+				y = col.Y;
+				somethingSet = true;
+			}
+			else
+			{
+				if (Math.Abs(o.bb.l - x) < base_width)
+				{
+					x = o.bb.l;
+					somethingSet = true;
+				}
+				else if (Math.Abs(o.bb.r - x) < base_width)
+				{
+					x = o.bb.r;
+					somethingSet = true;
+				}
+
+				if (Math.Abs(o.bb.u - y) < base_height)
+				{
+					y = o.bb.u;
+					somethingSet = true;
+				}
+				else if (Math.Abs(o.bb.d - y) < base_height)
+				{
+					y = o.bb.d;
+					somethingSet = true;
+				}
+
+				if (!somethingSet)
+				{
+					//BAD
+					if (Math.Abs(o.x - x) > Math.Abs(o.y - y))
+					{
+						if (x > o.x)
+							x = o.bb.r;
+						else
+							x = o.bb.l;
+						somethingSet = true;
+					}
+					else
+					{
+						if (y > o.y)
+							y = o.bb.d;
+						else
+							y = o.bb.u;
+						somethingSet = true;
+					}
+				}
+			}
+			
+			setRegions();
 		}
 
 		protected override void dotick()
@@ -124,6 +223,7 @@ namespace Velocity.Objects
 
 				x += xspeed * factor;
 				y += yspeed * factor;
+				//Move(xspeed * factor, yspeed * factor, true);
 
 				factorSet = false;
 				newFactor = 1;
@@ -134,23 +234,40 @@ namespace Velocity.Objects
 				x = stuckTo.x - xoff;
 				y = stuckTo.y - yoff;
 			}
+			setRegions();
 
 			if (vz != null)
 			{
 				vz.x = x;
 				vz.y = y;
+				vz.setRegions();
 			}
 			if ((Math.Abs(x) > 9999) || (Math.Abs(y) > 9999))
 				destroy();
 		}
 
-		protected override void doDraw(SpriteBatch spriteBatch, Camera c)
+		protected override void doEndTick()
 		{
 			if (stuckTo != null)
 			{
 				x = stuckTo.x - xoff;
 				y = stuckTo.y - yoff;
+				setRegions();
 			}
+			if (vz != null)
+			{
+				vz.x = x;
+				vz.y = y;
+				vz.setRegions();
+			}
+			px = x;
+			py = y;
+
+			base.doEndTick();
+		}
+
+		protected override void doDraw(SpriteBatch spriteBatch, Camera c)
+		{
 			drawSprite(spriteBatch, c, mainSprite, drawP);
 		}
 

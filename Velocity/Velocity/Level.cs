@@ -31,6 +31,11 @@ namespace Velocity
 		private char pauseResumeState = 'r';
 		private char restartState = 'n';
 
+		public int regionSize = 100;
+		public int regionsX = 7;
+		public int regionsY = 5;
+		public List<Region> regions;
+
 		//Texture2D blackPixel;
 
 		int debugTest = 0;
@@ -103,10 +108,23 @@ namespace Velocity
 
 			n1Keys.Add(Keys.D1); n2Keys.Add(Keys.D2); n3Keys.Add(Keys.D3); n4Keys.Add(Keys.D4); n5Keys.Add(Keys.D5);
 
+			setupRegions(regionSize, regionsX, regionsY);
+
 			doInitialize(game);
 		}
 
 		protected virtual void doInitialize(VelocityGame game) { }
+
+		public void setupRegions(int size, int numx, int numy)
+		{
+			regions = new List<Region>();
+			for(int y=0; y<numy; y++)
+				for(int x=0; x<numx; x++)
+				{
+					Region r = new Region(x * size, y * size, size, size);
+					regions.Add(r);
+				}
+		}
 
 		public void Update(VelocityGame game)
 		{
@@ -139,27 +157,13 @@ namespace Velocity
 			objsToRemove.Clear();
 
 			//Collision engine
-			if (!Paused())
-			for (int i = 0; i < objs.Count; i++)
-			{
-				if (objs[i].collisionStatic == true)
-					continue;	//Ignore collision static collisions
-				for (int j = 0; j < objs.Count; j++)
-				{
-					if (i == j)
-						continue;	//Don't collide with self of course
-					//if ((j > i) && (objs[i].collisionStatic == false))
-					//	continue;	//Don't double collide 2 nonstatic objects, we already did this for i
-					//Check for collision between these two
-					if (BB.collides(objs[i].bb, objs[j].bb))
-					{
-						objs[i].Collision(objs[j], true);
-						objs[j].Collision(objs[i], false);
-					}
-				}
-			}
+			CollisionEngine(game);
 
 			UpdateInput(game);
+
+			//End step
+			foreach (obj o in objs)
+				o.endTick();
 
 			gameTicks++;
 
@@ -200,6 +204,7 @@ namespace Velocity
 
 			foreach (obj o in objs)
 			{
+				o.verifyCoords();
 				o.draw(game.spriteBatch, camera);
 			}
 
@@ -455,6 +460,7 @@ namespace Velocity
 		protected obj initializeObj(VelocityGame game, obj o)
 		{
 			o.level = this;
+			o.setRegions();
 
 			o.loadTexture();
 
@@ -569,11 +575,79 @@ namespace Velocity
 			return players;
 		}
 
+		public void CollisionEngine(VelocityGame game)
+		{
+			/*		//Old collision, no regions
+			if (!Paused())
+				for (int i = 0; i < objs.Count; i++)
+				{
+					if (objs[i].collisionStatic == true)
+						continue;	//Ignore collision static collisions
+					for (int j = 0; j < objs.Count; j++)
+					{
+						if (i == j)
+							continue;	//Don't collide with self of course
+						//if ((j > i) && (objs[i].collisionStatic == false))
+						//	continue;	//Don't double collide 2 nonstatic objects, we already did this for i
+						//Check for collision between these two
+						if (BB.collides(objs[i].bb, objs[j].bb))
+						{
+							objs[i].Collision(objs[j], true);
+							objs[j].Collision(objs[i], false);
+						}
+					}
+				}
+			//*/
+
+			//With regions
+			if (!Paused())
+				foreach (Region r in regions)
+				{
+					for (int i = 0; i < r.objs.Count; i++)
+					{
+						if (r.objs[i].collisionStatic == true)
+							continue;	//Ignore collision static collisions
+						for (int j = 0; j < r.objs.Count; j++)
+						{
+							if (i == j)
+								continue;	//Don't collide with self of course
+							//if ((j > i) && (objs[i].collisionStatic == false))
+							//	continue;	//Don't double collide 2 nonstatic objects, we already did this for i
+							//Check for collision between these two
+							if (BB.collides(r.objs[i].bb, r.objs[j].bb))
+							{
+								r.objs[i].Collision(r.objs[j], true);
+								r.objs[j].Collision(r.objs[i], false);
+							}
+						}
+					}
+				}
+
+			foreach (Region r in regions)
+				r.tick();
+		}
+
 		#region Collision Functions
 
 		public bool collidesSolid(obj o)
 		{
-			foreach (obj j in objs)
+			/*foreach (obj j in objs)
+			{
+				if (o == j)
+					continue;	//Don't collide with self of course
+				//Check for collision between these two
+				if (BB.collides(o.bb, j.bb) && j.isSolid)
+					return true;
+			}
+			return false;//*/
+			foreach (Region r in o.myRegions)
+				if(collidesSolid(o, r.objs))
+					return true;
+			return false;
+		}
+		public bool collidesSolid(obj o, List<obj> obs)
+		{
+			foreach (obj j in obs)
 			{
 				if (o == j)
 					continue;	//Don't collide with self of course
@@ -588,7 +662,31 @@ namespace Velocity
 		{
 			List<obj> colls = new List<obj>();
 
-			foreach (obj j in objs)
+			/*foreach (obj j in objs)
+			{
+				if (i == j)
+					continue;	//Don't collide with self
+				if (solid && (!j.isSolid))
+					continue;	//Ignore if only solids requested
+				if (BB.collides(i.bb, j.bb))
+					colls.Add(j);
+			}
+
+			return colls;//*/
+			foreach (Region r in i.myRegions)
+			{
+				List<obj> colls2 = collisionList(i, solid, r.objs);
+				foreach (obj j in colls2)
+					if (!colls.Contains(j))
+						colls.Add(j);
+			}
+			return colls;
+		}
+		public List<obj> collisionList(obj i, bool solid, List<obj> obs)
+		{
+			List<obj> colls = new List<obj>();
+
+			foreach (obj j in obs)
 			{
 				if (i == j)
 					continue;	//Don't collide with self
@@ -605,9 +703,34 @@ namespace Velocity
 		{
 			List<obj> colls = new List<obj>();
 
-			BB bbAt = i.bb + new Vector2(atx, aty);
+			/*BB bbAt = i.bb + new Vector2(atx, aty);
 
 			foreach (obj j in objs)
+			{
+				if (i == j)
+					continue;	//Don't collide with self
+				if (solid && (!j.isSolid))
+					continue;	//Ignore if only solids requested
+				if (BB.collides(bbAt, j.bb))
+					colls.Add(j);
+			}//*/
+			foreach (Region r in i.myRegions)
+			{
+				List<obj> colls2 = collisionListAtRelative(i, atx, aty, solid, r.objs);
+				foreach (obj j in colls2)
+					if (!colls.Contains(j))
+						colls.Add(j);
+			}
+
+			return colls;
+		}
+		public List<obj> collisionListAtRelative(obj i, float atx, float aty, bool solid, List<obj> obs)
+		{
+			List<obj> colls = new List<obj>();
+
+			BB bbAt = i.bb + new Vector2(atx, aty);
+
+			foreach (obj j in obs)
 			{
 				if (i == j)
 					continue;	//Don't collide with self
@@ -624,9 +747,34 @@ namespace Velocity
 		{
 			List<obj> colls = new List<obj>();
 
+			//*
 			BB bb = new BB(x1, y1, x2, y2, "line");
 
 			foreach (obj o in objs)
+			{
+				if (solid && (!o.isSolid))
+					continue;
+				if (BB.collides(o.bb, bb))
+					colls.Add(o);
+			}//*/
+			/*
+			foreach (Region r in i.myRegions)
+			{
+				List<obj> colls2 = collisionListAlongLine(x1, y1, x2, y2, solid, r.objs);
+				foreach (obj j in colls2)
+					if (!colls.Contains(j))
+						colls.Add(j);
+			}//*/
+
+			return colls;
+		}
+		public List<obj> collisionListAlongLine(float x1, float y1, float x2, float y2, bool solid, List<obj> obs)
+		{
+			List<obj> colls = new List<obj>();
+
+			BB bb = new BB(x1, y1, x2, y2, "line");
+
+			foreach (obj o in obs)
 			{
 				if (solid && (!o.isSolid))
 					continue;
@@ -641,9 +789,84 @@ namespace Velocity
 		{
 			List<obj> colls = new List<obj>();
 
-			BB bb = new BB(atx, aty, 1);
+			/*BB bb = new BB(atx, aty, 1);
 
 			foreach (obj j in objs)
+			{
+				if (solid && (!j.isSolid))
+					continue;	//Ignore if only solids requested
+				if (BB.collides(bb, j.bb))
+					colls.Add(j);
+			}//*/
+			Region r = getRegionOf(atx, aty, regionSize, regionsX, regionsY);
+			if (r != null)
+				colls = collisionListAtPoint(atx, aty, solid, r.objs);
+
+			return colls;
+		}
+		public List<obj> collisionListAtPoint(float atx, float aty, bool solid, List<obj> obs)
+		{
+			List<obj> colls = new List<obj>();
+
+			BB bb = new BB(atx, aty, 1);
+
+			foreach (obj j in obs)
+			{
+				if (solid && (!j.isSolid))
+					continue;	//Ignore if only solids requested
+				if (BB.collides(bb, j.bb))
+					colls.Add(j);
+			}
+
+			return colls;
+		}
+
+		public List<obj> collisionListAtCircle(float atx, float aty, float rad, bool solid)
+		{
+			List<obj> colls = new List<obj>();
+
+			/*BB bb = new BB(atx, aty, 1);
+
+			foreach (obj j in objs)
+			{
+				if (solid && (!j.isSolid))
+					continue;	//Ignore if only solids requested
+				if (BB.collides(bb, j.bb))
+					colls.Add(j);
+			}//*/
+
+			List<Region> rgns = new List<Region>();
+
+			//GET REGIONS OF*, the circle may have multiple regions
+			Region rgn;
+			Vector4 v = getRegionNumbersOf(atx - rad, aty - rad, atx + rad, aty + rad, regionSize, regionsX, regionsY);
+			if (v.X == -1 || v.Y == -1 || v.Z == -1 || v.W == -1) return colls;
+			for (int i = (int)v.X; i <= (int)v.Z; i++)
+				for (int j = (int)v.Y; j <= (int)v.W; j++)
+				{
+					rgn = regions[j * regionsX + i];
+					rgns.Add(rgn);
+				}
+
+			foreach (Region r in rgns)
+			{
+				List<obj> colls2 = new List<obj>();
+				if (r != null)
+					colls2 = collisionListAtCircle(atx, aty, rad, solid, r.objs);
+				foreach (obj o in colls2)
+					if (!colls.Contains(o))
+						colls.Add(o);
+			}
+
+			return colls;
+		}
+		public List<obj> collisionListAtCircle(float atx, float aty, float rad, bool solid, List<obj> obs)
+		{
+			List<obj> colls = new List<obj>();
+
+			BB bb = new BB(atx, aty, rad);
+
+			foreach (obj j in obs)
 			{
 				if (solid && (!j.isSolid))
 					continue;	//Ignore if only solids requested
@@ -656,6 +879,34 @@ namespace Velocity
 
 		#endregion Collision Functions
 
+
+		private Vector4 getRegionNumbersOf(float ax, float ay, float bx, float by, int _rsize, int _rnumx, int _rnumy)
+		{
+			int x1, y1, x2, y2;
+			x1 = (int)Math.Floor((double)ax / _rsize);
+			y1 = (int)Math.Floor((double)ay / _rsize);
+			x2 = (int)Math.Floor((double)bx / _rsize);
+			y2 = (int)Math.Floor((double)by / _rsize);
+			if (x1 < 0) x1 = 0;
+			if (x1 >= _rnumx) return new Vector4(-1);
+			if (y1 < 0) y1 = 0;
+			if (y1 >= _rnumy) return new Vector4(-1);
+			if (x2 < 0) return new Vector4(-1);
+			if (x2 >= _rnumx) x2 = _rnumx - 1;
+			if (y2 < 0) return new Vector4(-1);
+			if (y2 >= _rnumy) y2 = _rnumy - 1;
+			return new Vector4(x1, y1, x2, y2);
+		}
+		private Region getRegionOf(float _x, float _y, int _rsize, int _rnumx, int _rnumy)
+		{
+			int xr, yr;
+			xr = (int)Math.Floor((double)_x / _rsize);
+			yr = (int)Math.Floor((double)_y / _rsize);
+			if ((xr >= 0) && (xr < _rnumx) && (yr >= 0) && (yr < _rnumy))
+				return regions[yr * _rnumx + xr];
+			return null;
+		}
+
 		public void Quit(VelocityGame game)
 		{
 			game.Exit();
@@ -666,35 +917,5 @@ namespace Velocity
 			restartTime = gameTicks + waitTime;
 			restartState = 'r';
 		}
-	}
-
-	public class Camera
-	{
-		public Vector2 XY;
-		public float zoom;	//Times zoomed OUT
-		public float moveSpeed = 3f;
-		public float zoomSpeed = .5f;
-		public float base_width, base_height;
-
-		public Camera(float _x, float _y, float _zoom, int gameWidth, int gameHeight)
-		{
-			XY = new Vector2(_x, _y);
-			zoom = _zoom;
-			base_width = gameWidth; base_height = gameHeight;
-		}
-
-		public void Zoom(float z)
-		{
-			float cx = XY.X + base_width * .5f * zoom;
-			float cy = XY.Y + base_height * .5f * zoom;
-			zoom *= z;
-			XY.X = cx - base_width * .5f * zoom;
-			XY.Y = cy - base_height * .5f * zoom;
-		}
-
-		public void moveLeft(float amt) { XY.X -= moveSpeed * zoom * amt; }
-		public void moveRight(float amt) { XY.X += moveSpeed * zoom * amt; }
-		public void moveUp(float amt) { XY.Y -= moveSpeed * zoom * amt; }
-		public void moveDown(float amt) { XY.Y += moveSpeed * zoom * amt; }
 	}
 }

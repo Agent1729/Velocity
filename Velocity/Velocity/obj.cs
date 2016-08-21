@@ -38,6 +38,8 @@ namespace Velocity
 		public bool hasBeenFrictioned;
 		public bool isMoving;
 		public bool destroyed;
+		public List<Region> myRegions;
+		public List<obj> collidThisTick;
 
 		public float base_width, base_height;
 
@@ -49,6 +51,8 @@ namespace Velocity
 			lmoving = false; rmoving = false; umoving = false; dmoving = false;
 			isMoving = false;
 			destroyed = false;
+			myRegions = new List<Region>();
+			collidThisTick = new List<obj>();
 			init();
 			bb = new BB(_x, _y, width, height);
 			WH.X = width; WH.Y = height;
@@ -66,12 +70,18 @@ namespace Velocity
 			isSolid = true;
 			takesControls = false;
 			canBePushed = false;*/
+			//setRegions();
 		}
 
 		protected virtual void destroy()
 		{
 			destroyed = true;
 			level.removeNewObj(this);
+			setRegions();
+			foreach (Region r in myRegions)
+				if(r.objs.Contains(this))
+					r.remove(this);
+			myRegions.Clear();
 		}
 
 		public void loadTexture() { doLoadTexture(); }
@@ -130,6 +140,15 @@ namespace Velocity
 			//y += yspeed;
 			Move(xspeed, yspeed, true);
 		}
+
+		public void endTick() { doEndTick(); }
+		protected virtual void doEndTick()
+		{
+			collidThisTick.Clear();
+		}
+
+		public void verifyCoords() { doVerifyCoords(); }
+		protected virtual void doVerifyCoords() { }
 
 		public virtual bool isGrounded() { return false; }
 
@@ -306,6 +325,7 @@ namespace Velocity
 				}
 			}
 
+			setRegions();
 			return new Vector2(movedx, movedy);
 		}
 
@@ -354,8 +374,88 @@ namespace Velocity
 		public void rmReleased(object lvl) { dormReleased(lvl); } protected virtual void dormReleased(object lvl) { }
 		#endregion
 
-		public void Collision(obj other, bool isPrimary) { doCollision(other, isPrimary); }
+		public void Collision(obj other, bool isPrimary)
+		{
+			if (collidThisTick.Contains(other))
+				return;
+			collidThisTick.Add(other);
+			doCollision(other, isPrimary);
+		}
 		protected virtual void doCollision(obj other, bool isPrimary) { }
+
+		public void setRegions()
+		{
+			if (destroyed) return;
+			foreach (Region r in myRegions)
+				r.remove(this);
+			List<Region> rgns = getRegions();
+			foreach (Region r in rgns)
+				r.add(this);
+			myRegions = rgns;
+		}
+
+		public List<Region> getRegions()
+		{
+			List<Region> regions = new List<Region>();
+			int rsize = level.regionSize;
+			int rnumx = level.regionsX;
+			int rnumy = level.regionsY;
+			Region r = null;
+
+			Vector4 v = getRegionNumbersOf(bb.l, bb.u, bb.r, bb.d, rsize, rnumx, rnumy);
+			if (v.X == -1 || v.Y == -1 || v.Z == -1 || v.W == -1) return regions;
+
+			for (int i = (int)v.X; i <= (int)v.Z; i++)
+				for (int j = (int)v.Y; j <= (int)v.W; j++)
+				{
+					r = level.regions[j * rnumx + i];
+					regions.Add(r);
+				}
+
+			//For each corner, get its region. If the region is not in regions, add it
+			/*r = getRegionOf(bb.l, bb.u, rsize, rnum);
+			if (r != null && !regions.Contains(r))
+				regions.Add(r);
+			r = getRegionOf(bb.r, bb.u, rsize, rnum);
+			if (r != null && !regions.Contains(r))
+				regions.Add(r);
+			r = getRegionOf(bb.r, bb.d, rsize, rnum);
+			if (r != null && !regions.Contains(r))
+				regions.Add(r);
+			r = getRegionOf(bb.l, bb.d, rsize, rnum);
+			if (r != null && !regions.Contains(r))
+				regions.Add(r);//*/
+
+			return regions;
+		}
+
+		private Vector4 getRegionNumbersOf(float ax, float ay, float bx, float by, int _rsize, int _rnumx, int _rnumy)
+		{
+			int x1, y1, x2, y2;
+			x1 = (int)Math.Floor((double)ax / _rsize);
+			y1 = (int)Math.Floor((double)ay / _rsize);
+			x2 = (int)Math.Floor((double)bx / _rsize);
+			y2 = (int)Math.Floor((double)by / _rsize);
+			if (x1 < 0) x1 = 0;
+			if (x1 >= _rnumx) return new Vector4(-1);
+			if (y1 < 0) y1 = 0;
+			if (y1 >= _rnumy) return new Vector4(-1);
+			if (x2 < 0) return new Vector4(-1);
+			if (x2 >= _rnumx) x2 = _rnumx - 1;
+			if (y2 < 0) return new Vector4(-1);
+			if (y2 >= _rnumy) y2 = _rnumy - 1;
+			return new Vector4(x1, y1, x2, y2);
+		}
+
+		private Region getRegionOf(float _x, float _y, int _rsize, int _rnum)
+		{
+			int xr, yr;
+			xr = (int)Math.Floor((double)_x / _rsize);
+			yr = (int)Math.Floor((double)_y / _rsize);
+			if ((xr >= 0) && (xr < _rnum) && (yr >= 0) && (yr < _rnum))
+				return level.regions[yr * _rnum + xr];
+			return null;
+		}
 
 		//protected virtual bool moveToOther(obj b, float axspeed, float ayspeed)
 		//{
@@ -731,47 +831,9 @@ namespace Velocity
 
 		public static bool linesCollide(float ax1, float ay1, float ax2, float ay2, float bx1, float by1, float bx2, float by2)
 		{
-			#region 1st Try
-			//float m1=9999, c1, m2=9999, c2;
-
-			//if (ax1 != ax2)
-			//    m1 = (ay2 - ay1) / (ax2 - ax1);
-			//c1 = m1 * ax1 - ay1;
-			//if (bx1 != bx2)
-			//    m2 = (by2 - by1) / (bx2 - bx1);
-			//c2 = m2 * bx1 - by1;
-
-			//if (m1 == m2)
-			//    return false;
-
-			//if ((m1 != 9999) && (m2 != 9999))
-			//{
-			//    float x3 = (c2 - c1) / (m1 - m2);
-			//    if (((x3 > ax1) && (x3 < ax2)) || ((x3 > ax2) && (x3 < ax1)))
-			//        return true;
-			//}
-			//else if (m1 == 9999)	//m1 is vertical, m2 is not
-			//{
-			//    float y3 = m2 * ax1 + c2;
-			//    if (((y3 > ay1) && (y3 < ay2)) || ((y3 > ay2) && (y3 < ay1)))
-			//        return true;
-			//}
-			//else if (m2 == 9999)	//m2 is vertical, m1 is not
-			//{
-			//    float y3 = m1 * bx1 + c1;
-			//    if (((y3 > by1) && (y3 < by2)) || ((y3 > by2) && (y3 < by1)))
-			//        return true;
-			//}
-
-			//return false;
-			#endregion 1st Try
-
 			float denominator = ((ax2 - ax1) * (by2 - by1)) - ((ay2 - ay1) * (bx2 - bx1));
 			float numerator1 = ((ay1 - by1) * (bx2 - bx1)) - ((ax1 - bx1) * (by2 - by1));
 			float numerator2 = ((ay1 - by1) * (ax2 - ax1)) - ((ax1 - bx1) * (ay2 - ay1));
-			//float denominator = ((b.X - a.X) * (d.Y - c.Y)) - ((b.Y - a.Y) * (d.X - c.X));
-			//float numerator1 = ((a.Y - c.Y) * (d.X - c.X)) - ((a.X - c.X) * (d.Y - c.Y));
-			//float numerator2 = ((a.Y - c.Y) * (b.X - a.X)) - ((a.X - c.X) * (b.Y - a.Y));
 
 			// Detect coincident lines (has a problem, read below)
 			// (Doesn't work if lines are coincident but don't overlap?)
@@ -782,58 +844,63 @@ namespace Velocity
 			float s = numerator2 / denominator;
 
 			return ((r >= 0 && r <= 1) && (s >= 0 && s <= 1));
+		}
 
-			//return false;
+		public static Vector2 lineCollisionPoint(float ax1, float ay1, float ax2, float ay2, float bx1, float by1, float bx2, float by2)
+		{
+			if (!linesCollide(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2))
+				return new Vector2(-1, -1);
 
+			bool line1Vert = (ax1 == ax2);
+			float m1=0, b1=0;
+			bool line2Vert = (bx1 == bx2);
+			float m2=0, b2=0;
 
-			/*
-			public static bool lineIntersect(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+			if (!line1Vert)
 			{
-				var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-				var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-				if (isNaN(x)||isNaN(y))
-					return false;
-				else
-				{
-					if (x1>=x2)
-					{
-						if (!(x2<=x&&x<=x1)) {return false;}
-					}
-					else
-					{
-						if (!(x1<=x&&x<=x2)) {return false;}
-					}
-					if (y1>=y2)
-					{
-						if (!(y2<=y&&y<=y1)) {return false;}
-					}
-					else
-					{
-						if (!(y1<=y&&y<=y2)) {return false;}
-					}
-					if (x3>=x4)
-					{
-						if (!(x4<=x&&x<=x3)) {return false;}
-					}
-					else
-					{
-						if (!(x3<=x&&x<=x4)) {return false;}
-					}
-					if (y3>=y4)
-					{
-						if (!(y4<=y&&y<=y3)) {return false;}
-					}
-					else
-					{
-						if (!(y3<=y&&y<=y4)) {return false;}
-					}
-				}
-				return true;
+				m1 = (ay2 - ay1) / (ax2 - ax1);
+				b1 = ay1 - m1 * ax1;
 			}
-			//*/
+			if (!line2Vert)
+			{
+				m2 = (by2 - by1) / (bx2 - bx1);
+				b2 = by1 - m2 * bx1;
+			}
+
+			if (line1Vert && line2Vert)
+				return new Vector2(ax1, ay1);
+
+			if(!line1Vert && !line2Vert)
+			{
+				//Both diagonal or horizontal
+				//Solve for x in: m1*x+b1=m2*x+b2
+					//x(m1-m2)=b2-b1
+					//x=(b2-b1)/(m1-m2)
+				if (m1 == m2)	//Parallel
+					return new Vector2(-1, -1);
+				float ansx = (b2 - b1) / (m1 - m2);
+				float ansy = m1 * ansx + b1;
+				return new Vector2(ansx, ansy);
+			}
+
+			if (line1Vert)
+			{
+				float ansx = ax1;
+				float ansy = m2 * ansx + b2;
+				return new Vector2(ansx, ansy);
+			}
+
+			if (line2Vert)
+			{
+				float ansx = bx1;
+				float ansy = m1 * ansx + b1;
+				return new Vector2(ansx, ansy);
+			}
+
+			return new Vector2(-1, -1);	//Error
 		}
 		
-		public static Dir collisionDirection(BB a, BB b, float xs, float ys)
+		/*public static Dir collisionDirection(BB a, BB b, float xs, float ys)
 		{
 			if ((a.x <= b.x) && (xs > 0))
 			{
@@ -854,8 +921,8 @@ namespace Velocity
 			}
 
 			return Dir.Left;
-		}
+		}//*/
 	}
 
-	public enum Dir { Left, Right, Up, Down };
+	//public enum Dir { Left, Right, Up, Down };
 }

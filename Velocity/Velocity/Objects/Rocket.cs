@@ -19,7 +19,7 @@ namespace Velocity.Objects
 	public class Rocket : VelocityObj
 	{
 		private float xrspd, yrspd;
-		private float spd = 3.5f, turnSpd = .05f;
+		private float spd = 3.5f, turnSpd = .05f, rocketGravFactor = 1f;
 		private float rocketAng;
 		private obj lockedOn;
 
@@ -69,19 +69,37 @@ namespace Velocity.Objects
 			if (hasGravity)
 			{
 				if (!factorAffectsGrav)
-					yspeed += gravity * factor * gravFactor;
+					yspeed += gravity * factor * gravFactor * rocketGravFactor;
 				else
-					yspeed += gravity * gravFactor;
+					yspeed += gravity * gravFactor * rocketGravFactor;
 			}
 
 			capSpeed(terminalVelocity);
 
 			//Calculate angle and speed
-			getNewAngle(lockedOn);
+			getNewAngle(lockedOn, gravity);
 			getNewSpeed();
 
-			x += (xspeed + xrspd) * factor;
-			y += (yspeed + yrspd) * factor;
+			float dx = (xspeed + xrspd);
+			float dy = (yspeed + yrspd);
+			if (gravFactor > 1)
+			{
+				//dy = yspeed + yrspd + gravity * (float)Math.Pow((double)mathGrav, 3.0) * rocketGravFactor;
+				//dy = yspeed + yrspd + gravity * (5.55f * gravFactor * gravFactor - 7.22f * gravFactor + 1.2f) / 10f * rocketGravFactor;
+				dy = yspeed + yrspd + gravity * (0f * gravFactor * gravFactor + 13.33f * gravFactor - 14.66f) / 10f * rocketGravFactor;
+			}
+			else if (gravFactor < 0)
+			{
+				//dy = yspeed + yrspd + gravity * gravFactor * .95f * rocketGravFactor;
+			}
+			else if (gravFactor < 1)
+			{
+				//dy = yspeed + yrspd + gravity * gravFactor * rocketGravFactor;
+			}
+			x += dx * factor;
+			y += dy * factor;
+			rocketAng = calcAng(dx, dy);
+			setRegions();
 			//Move(xspeed * factor, yspeed * factor, true);
 
 			factorSet = false;
@@ -89,15 +107,27 @@ namespace Velocity.Objects
 			newGravFactor = 1;
 		}
 
-		private void getNewAngle(obj o)
+		private void getNewAngle(obj o, float g)
 		{
 			float xd = o.x - x, yd = o.y - y;
 			float angP = calcAng(xd, yd);
 
+
+			//
+			float xspd = (float)Math.Cos(angP) * spd;
+			float yspd = (float)Math.Sin(angP) * spd;
+			angP = calcAng(xspd, yspd - g);
+			//
+
+
 			float cw = angP - rocketAng;
 			if (cw < 0)
 				cw += (float)Math.PI * 2;
-			if (cw <= Math.PI)	//Turn clockwise
+			if(Math.Abs(cw) <= .1) //Don't turn
+			{
+
+			}
+			else if (cw <= Math.PI)	//Turn clockwise
 			{
 				if (Math.Abs(angP - rocketAng) <= turnSpd * factor)
 					rocketAng = angP;

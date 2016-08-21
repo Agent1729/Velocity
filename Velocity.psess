@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <VSPerformanceSession Version="1.00">
   <Options>
-    <Solution>Velocity.sln</Solution>
+    <Solution>Dungeon.sln</Solution>
     <CollectionMethod>Sampling</CollectionMethod>
     <AllocationMethod>None</AllocationMethod>
     <AddReport>true</AddReport>
@@ -36,7 +36,7 @@
   </PostinstrumentEvent>
   <Binaries>
     <ProjBinary>
-      <Path>Velocity\Velocity\obj\x86\Debug\Velocity.exe</Path>
+      <Path>Dungeon\Dungeon\obj\x86\Debug\Dungeon.exe</Path>
       <ArgumentTimestamp>01/01/0001 00:00:00</ArgumentTimestamp>
       <Instrument>true</Instrument>
       <Sample>true</Sample>
@@ -48,8 +48,8 @@
       <LaunchProject>true</LaunchProject>
       <OverrideProjectSettings>false</OverrideProjectSettings>
       <LaunchMethod>Executable</LaunchMethod>
-      <ExecutablePath>Velocity\Velocity\bin\x86\Debug\Velocity.exe</ExecutablePath>
-      <StartupDirectory>Velocity\Velocity\bin\x86\Debug\</StartupDirectory>
+      <ExecutablePath>Dungeon\Dungeon\bin\x86\Debug\Dungeon.exe</ExecutablePath>
+      <StartupDirectory>Dungeon\Dungeon\bin\x86\Debug\</StartupDirectory>
       <Arguments>
       </Arguments>
       <NetAppHost>IIS</NetAppHost>
@@ -62,31 +62,19 @@
       <PostinstrumentEvent>
         <InstrEventExclude>false</InstrEventExclude>
       </PostinstrumentEvent>
-      <ProjRef>{BE139B80-8B4E-4D2D-B1F8-177F55A230BF}|Velocity\Velocity\Velocity.csproj</ProjRef>
-      <ProjPath>Velocity\Velocity\Velocity.csproj</ProjPath>
-      <ProjName>Velocity</ProjName>
+      <ProjRef>{BE139B80-8B4E-4D2D-B1F8-177F55A230BF}|Dungeon\Dungeon\Dungeon.csproj</ProjRef>
+      <ProjPath>Dungeon\Dungeon\Dungeon.csproj</ProjPath>
+      <ProjName>Dungeon</ProjName>
     </ProjBinary>
   </Binaries>
   <Reports>
     <Report>
-      <Path>Velocity150513(4).vsp</Path>
-    </Report>
-    <Report>
-      <Path>Velocity150513(1).vsp</Path>
-    </Report>
-    <Report>
-      <Path>Velocity150513(2).vsp</Path>
-    </Report>
-    <Report>
-      <Path>Velocity150513(3).vsp</Path>
-    </Report>
-    <Report>
-      <Path>Velocity150513.vsp</Path>
+      <Path>Dungeon150513(4).vsp</Path>
     </Report>
   </Reports>
   <Launches>
     <ProjBinary>
-      <Path>:PB:{BE139B80-8B4E-4D2D-B1F8-177F55A230BF}|Velocity\Velocity\Velocity.csproj</Path>
+      <Path>:PB:{BE139B80-8B4E-4D2D-B1F8-177F55A230BF}|Dungeon\Dungeon\Dungeon.csproj</Path>
     </ProjBinary>
   </Launches>
 </VSPerformanceSession>

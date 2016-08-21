@@ -55,6 +55,8 @@ namespace Velocity.Objects
 			hasGravity = false;
 			canAbsorb = false;
 			hasBeenFrictioned = false;
+
+			base.init();
 		}
 
 		protected override void doLoadTexture()

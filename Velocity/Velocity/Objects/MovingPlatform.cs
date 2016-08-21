@@ -70,7 +70,10 @@ namespace Velocity.Objects
 				paintedTime--;
 
 			if (factorSet)
+			{
 				factor = newFactor;
+				gravFactor = newGravFactor;
+			}
 
 			if (hasGravity)
 				yspeed += gravity * Math.Abs(factor);
@@ -156,9 +159,11 @@ namespace Velocity.Objects
 				}
 			}
 			objsToMove.Clear();
+			setRegions();
 
 			factorSet = false;
 			newFactor = 1;
+			newGravFactor = 1;
 		}
 
 		protected override void doCollision(obj other, bool isPrimary)

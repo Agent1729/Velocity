@@ -33,6 +33,8 @@ namespace Velocity.Objects
 			//base.init();
 
 			factor = 1;
+
+			base.init();
 		}
 
 		protected override void dotick()
@@ -454,6 +456,8 @@ namespace Velocity.Objects
 			}
 			//y+=my;
 			y = (float)Math.Round(y + my, 5);
+
+			setRegions();
 		}
 
 		protected static float makeDistSafe(float dist)
@@ -483,10 +487,15 @@ namespace Velocity.Objects
 			float safePushDist = 1;
 
 			colls = level.collisionList(this, true);
-			if (colls.Count != 0)
+			while (colls.Count != 0)
 			{
 				//Pre colliding, GLITCH!!!
 				int asdf = 0;
+				//As a temp fix, just move up above it
+				y -= 1;
+				setRegions();
+
+				colls = level.collisionList(this, true);
 			}
 
 			colls4 = level.collisionListAtRelative(this, 0, -1, true);
@@ -767,6 +776,7 @@ namespace Velocity.Objects
 			//{ x = ix; y = iy; }
 
 			isMoving = false;
+			setRegions();
 			return new Vector2(movedx, movedy);
 		}
 

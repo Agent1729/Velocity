@@ -114,12 +114,6 @@ namespace Velocity.Objects
 				ydest = seeking.y;
 			}
 
-			if (Math.Abs(x - xdest) < Math.Abs(xspeed * factor) && Math.Abs(y - ydest) < Math.Abs(yspeed * factor) && !destroyed)
-			{
-				setPortal();
-				return;
-			}
-
 			if (paintedTime <= 0)
 			{
 				factor = 1;
@@ -134,10 +128,17 @@ namespace Velocity.Objects
 				gravFactor = newGravFactor;
 			}
 
+			if (Math.Abs(x - xdest) < Math.Abs(xspeed * factor) && Math.Abs(y - ydest) < Math.Abs(yspeed * factor) && !destroyed)
+			{
+				setPortal();
+				return;
+			}
+
 			capSpeed(terminalVelocity);
 
 			x += xspeed * factor;
 			y += yspeed * factor;
+			setRegions();
 
 			factorSet = false;
 			newFactor = 1;
@@ -155,6 +156,7 @@ namespace Velocity.Objects
 
 				vz.x = xdest; vz.y = ydest;
 				vz.rescale(scale);
+				vz.setRegions();
 				vz.vFactor = vFactor;
 				vz.vGravFactor = vGravFactor;
 				vz.type = type;

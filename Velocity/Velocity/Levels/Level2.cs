@@ -32,7 +32,7 @@ namespace Velocity.Levels
 			addObj(game, new MovingPlatform(0, 100, false, 3, 364-64));
 
 			addObj(game, new Wall(300, 150));
-			addObj(game, new Box(300, 100));
+			//addObj(game, new Box(300, 100));
 			VelocityZone v = (VelocityZone)addObj(game, new VelocityZone(200, 350));
 
 			Player p = (Player)addObj(game, new Player(0, 0, 1, v));
@@ -44,6 +44,7 @@ namespace Velocity.Levels
 
 			addObj(game, new EnemyRocketLauncher(450, 30));
 			addObj(game, new Wall(482, 30));
+			addObj(game, new RegionVisualizer(0, 0));
 		}
 
 		protected void drawWallLine(VelocityGame game, float _x, float _y, int n, bool horizontal)

@@ -107,6 +107,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Camera.cs" />
     <Compile Include="Level.cs" />
     <Compile Include="Levels\Level1.cs" />
     <Compile Include="Levels\Level2.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="Objects\MovingPlatform.cs" />
     <Compile Include="Objects\PaintNode.cs" />
     <Compile Include="Objects\Player.cs" />
+    <Compile Include="RegionVisualizer.cs" />
     <Compile Include="Objects\Rocket.cs" />
     <Compile Include="Objects\StickyNode.cs" />
     <Compile Include="Objects\VelocityNode.cs" />
@@ -125,6 +127,7 @@
     <Compile Include="Objects\Wall.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Region.cs" />
     <Compile Include="SoundManager.cs" />
     <Compile Include="FontManager.cs" />
     <Compile Include="SpriteManager.cs" />

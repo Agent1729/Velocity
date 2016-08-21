@@ -128,6 +128,7 @@ namespace Velocity.Objects
 			{
 				vz.x = x;
 				vz.y = y;
+				vz.setRegions();
 				vz.paintTime = paintTime;
 			}
 			if ((Math.Abs(x) > 1000) || (Math.Abs(y) > 1000))
@@ -139,6 +140,7 @@ namespace Velocity.Objects
 				y = ydest;
 				StayHere();
 			}
+			setRegions();
 		}
 
 		public void setStats(Player _plr)
