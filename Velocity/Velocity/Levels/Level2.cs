@@ -36,7 +36,7 @@ namespace Velocity.Levels
 			addObj(game, new MovingPlatform(0, 150, false, 3, 364-64-50));
 
 			addObj(game, new Wall(300, 150));
-			addObj(game, new Box(300, 100));
+			//addObj(game, new Box(300, 100));
 			VelocityZone v = (VelocityZone)addObj(game, new VelocityZone(200, 350));
 
 			Player p = (Player)addObj(game, new Player(0, 0, 1, v));

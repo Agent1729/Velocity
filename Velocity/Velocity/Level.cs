@@ -137,10 +137,15 @@ namespace Velocity
 				Quit(game);
 			}
 
+			//Begin Step
+			if (!Paused())
+				foreach (obj o in objs)
+					o.beginTick();
+
 			//Step
 			if(!Paused())
-			foreach (obj o in objs)
-				o.tick();
+				foreach (obj o in objs)
+					o.tick();
 
 			//Add new objects created
 			if (objsToAdd.Count > 0)

@@ -26,6 +26,10 @@ namespace Velocity
 		protected Vector2 XY;
 		protected Vector2 WH;
 		public float width, height;
+		public float mass = 1;
+		public float pushForce = 1;
+		public float fmaPushMod = .25f;
+		public float inertia = 1;
 		protected Vector2 speed;
 		public BB bb;
 		public string objType;
@@ -33,13 +37,18 @@ namespace Velocity
 		public bool collisionStatic;
 		public bool isSolid;
 		public bool takesControls;
-		public bool canBePushed;
 		public bool canAbsorb;
 		public bool hasBeenFrictioned;
+		public bool hasMoved;
 		public bool isMoving;
 		public bool destroyed;
 		public List<Region> myRegions;
 		public List<obj> collidThisTick;
+
+		public bool canBePushed;
+		public int ticksSincePushed = -1;
+		public List<obj> objsPushed;
+		public List<obj> objsPushedLast;
 
 		public float base_width, base_height;
 
@@ -53,6 +62,8 @@ namespace Velocity
 			destroyed = false;
 			myRegions = new List<Region>();
 			collidThisTick = new List<obj>();
+			objsPushed = new List<obj>();
+			objsPushedLast = new List<obj>();
 			init();
 			bb = new BB(_x, _y, width, height);
 			WH.X = width; WH.Y = height;
@@ -133,19 +144,32 @@ namespace Velocity
 			get { return speed; }
 		}
 
+		public void beginTick() { doBeginTick(); }
+		protected virtual void doBeginTick()
+		{
+			hasMoved = false;
+			if (ticksSincePushed >= 0) ticksSincePushed++;
+			if (ticksSincePushed >= 2) ticksSincePushed = -1;
+		}
+
 		public void tick() { dotick(); }
 		protected virtual void dotick()
 		{
 			//x += xspeed;
 			//y += yspeed;
-			if (xspeed != 0 || yspeed != 0)
-				Move(xspeed, yspeed, true);
+			if (!hasMoved)
+			{
+				if (xspeed != 0 || yspeed != 0)
+					Move(xspeed, yspeed, true);
+			}
 		}
 
 		public void endTick() { doEndTick(); }
 		protected virtual void doEndTick()
 		{
 			collidThisTick.Clear();
+			objsPushedLast = objsPushed;
+			objsPushed = new List<obj>();
 		}
 
 		public void verifyCoords() { doVerifyCoords(); }
@@ -330,22 +354,22 @@ namespace Velocity
 			return new Vector2(movedx, movedy);
 		}
 
-		public virtual Vector2 Move(float mx, float my, bool actuallyMoveDeprecated)
+		public virtual Vector2 Move(float mx, float my, bool setHasMovedTrue)
 		{
 			return new Vector2();
 		}
 
-		public virtual Vector2 Move(float mx, float my, bool actuallyMoveDeprecated, int layers, int movedLayers)
+		public virtual Vector2 Move(float mx, float my, bool setHasMovedTrue, int layers, int movedLayers)
 		{
 			return new Vector2();
 		}
 
-		public virtual Vector2 Move2(float mx, float my, bool asdlkfj)
+		public virtual Vector2 Move2(float mx, float my, bool setHasMovedTrue)
 		{
 			return new Vector2();
 		}
 
-		public virtual Vector2 MoveHelped(float mx, float my, bool asdlkfj, int layers, int movedLayers)
+		public virtual Vector2 MoveHelped(float mx, float my, bool setHasMovedTrue, int layers, int movedLayers)
 		{
 			return new Vector2();
 		}

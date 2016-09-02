@@ -20,6 +20,16 @@ namespace Velocity.Objects
 	{
 		//public float moveSpeed;
 		public bool grounded = false;
+		public float friction = .25f;
+		public float maxXSpeed = 3;
+
+		public List<float> xspeeds = new List<float>();
+		public List<float> yspeeds = new List<float>();
+		public List<float> xdists = new List<float>();
+		public List<float> ydists = new List<float>();
+		public float xpre;
+		public float ypre;
+		public int logsToHold = 10;
 
 		public Box(float x, float y)
 			: base(x, y)
@@ -33,6 +43,9 @@ namespace Velocity.Objects
 			base_width = 16; base_height = 16;
 			width = base_width; height = base_height;
 			depth = 5;
+			mass = 20;
+			pushForce = 1;
+			inertia = 10;
 			collisionStatic = false;
 			isSolid = true;
 			takesControls = false;
@@ -42,6 +55,38 @@ namespace Velocity.Objects
 			hasBeenFrictioned = false;
 
 			base.init();
+		}
+
+		protected override void doleftPressed(object lvl)
+		{
+			xspeed = -5;
+		}
+
+		protected override void dorightPressed(object lvl)
+		{
+			xspeed = 5;
+		}
+
+		protected override void doBeginTick()
+		{
+			base.doBeginTick();
+
+			xpre = x;
+			ypre = y;
+		}
+
+		protected override void doEndTick()
+		{
+			base.doEndTick();
+
+			xspeeds.Add(xspeed);
+			yspeeds.Add(yspeed);
+			xdists.Add(x - xpre);
+			ydists.Add(y - ypre);
+			if (xspeeds.Count > logsToHold) xspeeds.RemoveAt(0);
+			if (yspeeds.Count > logsToHold) yspeeds.RemoveAt(0);
+			if (xdists.Count > logsToHold) xdists.RemoveAt(0);
+			if (ydists.Count > logsToHold) ydists.RemoveAt(0);
 		}
 
 		protected override void dotick()
@@ -71,12 +116,53 @@ namespace Velocity.Objects
 			}
 
 			capSpeed(terminalVelocity);
-			Move(xspeed * factor, yspeed * factor, true);
-			setRegions();
+			if (!hasMoved)
+			{
+				Move(xspeed * factor, yspeed * factor, true);
+				setRegions();
+			}
+
+			frictionSelf();
+			capHorizontalSpeed(maxXSpeed);
 
 			factorSet = false;
 			newFactor = 1;
 			newGravFactor = 1;
+		}
+
+		public void frictionSelf()
+		{
+			//if (!isGrounded()) return;
+			if (ticksSincePushed >= 0)
+				return;
+			if(xspeed>0)
+			{
+				if (xspeed > friction * factor * gravFactor)
+				{
+					xspeed -= friction * factor * gravFactor;
+				}
+				else
+				{
+					xspeed = 0;
+				}
+			}
+			else if(xspeed<0)
+			{
+				if (xspeed < -friction * factor * gravFactor)
+				{
+					xspeed += friction * factor * gravFactor;
+				}
+				else
+				{
+					xspeed = 0;
+				}
+			}
+		}
+
+		public void capHorizontalSpeed(float max)
+		{
+			if (xspeed > max) xspeed = max;
+			if (xspeed < -max) xspeed = -max;
 		}
 
 		protected override void doCollision(obj other, bool isPrimary)

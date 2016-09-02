@@ -19,11 +19,19 @@ namespace Velocity.Objects
 	public class Player : VelocityObj
 	{
 		public int num;
-		public float moveSpeed;
+		public float moveSpeed = 5;
+		public float moveSpeed2 = 1;
+		public float friction = 1f;
+		public float maxXspeed = 5;
 
 		public bool dead = false;
 		public bool canBeControlled = true;
 		public float cantBeControlledTimer = 0;
+
+		public bool leftKeyDown = false;
+		public bool rightKeyDown = false;
+		public bool upKeyDown = false;
+		public bool downKeyDown = false;
 
 		public bool isJumping = false;
 		public bool grounded = false;
@@ -58,16 +66,23 @@ namespace Velocity.Objects
 		public SoundEffect se;
 		public SoundEffectInstance sei;
 
+		public List<float> xspeeds = new List<float>();
+		public List<float> yspeeds = new List<float>();
+		public List<float> xdists = new List<float>();
+		public List<float> ydists = new List<float>();
+		public float xpre;
+		public float ypre;
+		public int logsToHold = 10;
+		public Box box = null;
+
 		public Player(float x, float y, int _num) : base(x, y)
 		{
 			num = _num;
-			moveSpeed = 5.0f;
 		}
 
 		public Player(float x, float y, int _num, VelocityZone _vz) : base(x, y)
 		{
 			num = _num;
-			moveSpeed = 5.0f;
 			vz = _vz;
 		}
 
@@ -81,6 +96,9 @@ namespace Velocity.Objects
 			base_width = 70 / plrScale; base_height = 70 / plrScale;
 			width = base_width; height = base_height;
 			depth = 1;
+			mass = 5;
+			pushForce = 20;
+			inertia = 5;
 			collisionStatic = false;
 			isSolid = true;
 			takesControls = true;
@@ -88,6 +106,11 @@ namespace Velocity.Objects
 			hasGravity = true;
 			canAbsorb = true;
 			hasBeenFrictioned = false;
+
+			xspeeds.Add(0);
+			yspeeds.Add(0);
+			xdists.Add(0);
+			ydists.Add(0);
 
 			base.init();
 		}
@@ -108,20 +131,34 @@ namespace Velocity.Objects
 
 		protected override void doleftDown(object lvl)
 		{
+			//if (canBeControlled)
+			//if (!lmoving)
+			//{
+			//	xspeed -= moveSpeed;
+			//	lmoving = true;
+			//}
 			if (canBeControlled)
-			if (!lmoving)
 			{
-				xspeed -= moveSpeed;
-				lmoving = true;
+				xspeed -= moveSpeed2 * factor;
+				if (xspeed < -maxXspeed)
+					xspeed = -maxXspeed;
+				leftKeyDown = true;
 			}
 		}
 		protected override void dorightDown(object lvl)
 		{
+			//if (canBeControlled)
+			//if (!rmoving)
+			//{
+			//	xspeed += moveSpeed;
+			//	rmoving = true;
+			//}
 			if (canBeControlled)
-			if (!rmoving)
 			{
-				xspeed += moveSpeed;
-				rmoving = true;
+				xspeed += moveSpeed2 * factor;
+				if (xspeed > maxXspeed)
+					xspeed = maxXspeed;
+				rightKeyDown = true;
 			}
 		}
 		protected override void doupDown(object lvl)
@@ -154,21 +191,30 @@ namespace Velocity.Objects
 		}
 		protected override void doleftReleased(object lvl)
 		{
-			if (canBeControlled)
-			if (lmoving)
+			//if (canBeControlled)
+			//if (lmoving)
+			//{
+			//	xspeed += moveSpeed;
+			//	//xspeed = 0;
+			//	lmoving = false;
+			//}
+			if(canBeControlled && leftKeyDown)
 			{
-				xspeed += moveSpeed;
-				lmoving = false;
+				//xspeed = 0;
 			}
+
+			leftKeyDown = false;
 		}
 		protected override void dorightReleased(object lvl)
 		{
-			if (canBeControlled)
-			if (rmoving)
-			{
-				xspeed -= moveSpeed;
-				rmoving = false;
-			}
+			//if (canBeControlled)
+			//if (rmoving)
+			//{
+			//	xspeed -= moveSpeed;
+			//	rmoving = false;
+			//}
+
+			rightKeyDown = false;
 		}
 		protected override void doupReleased(object lvl)
 		{
@@ -214,6 +260,28 @@ namespace Velocity.Objects
 
 		#endregion
 
+		protected override void doBeginTick()
+		{
+			base.doBeginTick();
+
+			xpre = x;
+			ypre = y;
+		}
+
+		protected override void doEndTick()
+		{
+			base.doEndTick();
+
+			xspeeds.Add(xspeed);
+			yspeeds.Add(yspeed);
+			xdists.Add(x - xpre);
+			ydists.Add(y - ypre);
+			if (xspeeds.Count > logsToHold) xspeeds.RemoveAt(0);
+			if (yspeeds.Count > logsToHold) yspeeds.RemoveAt(0);
+			if (xdists.Count > logsToHold) xdists.RemoveAt(0);
+			if (ydists.Count > logsToHold) ydists.RemoveAt(0);
+		}
+
 		protected override void dotick()
 		{
 			hasBeenFrictioned = false;
@@ -241,7 +309,9 @@ namespace Velocity.Objects
 			}
 
 			capSpeed(terminalVelocity);
-			Move(xspeed * factor, yspeed * factor, true);
+			capHorizontalSpeed(maxXspeed);
+			if(!hasMoved)
+				Move(xspeed * factor, yspeed * factor, true);
 			setRegions();
 
 			if (!dead)
@@ -254,9 +324,45 @@ namespace Velocity.Objects
 					LoseControl();
 			}
 
+			if(!leftKeyDown&&!rightKeyDown)
+				frictionSelf();
 			factorSet = false;
 			newFactor = 1;
 			newGravFactor = 1;
+		}
+
+		public void frictionSelf()
+		{
+			//if (!isGrounded()) return;
+			if (xspeed > 0)
+			{
+				
+				if (xspeed > friction * factor)
+				{
+					xspeed -= friction * factor;
+				}
+				else
+				{
+					xspeed = 0;
+				}
+			}
+			else if (xspeed < 0)
+			{
+				if (xspeed < -friction * factor)
+				{
+					xspeed += friction * factor;
+				}
+				else
+				{
+					xspeed = 0;
+				}
+			}
+		}
+
+		public void capHorizontalSpeed(float max)
+		{
+			if (xspeed > max) xspeed = max;
+			if (xspeed < -max) xspeed = -max;
 		}
 
 		protected override void doCollision(obj other, bool isPrimary)
@@ -269,6 +375,8 @@ namespace Velocity.Objects
 				wallCollide(other, isPrimary, 0);//*/
 			if (other.objType == "VelocityZone")
 				vZoneCollide(other, isPrimary);
+			if (other.objType == "Box")
+				box = (Box)other;
 		}
 
 		public override bool isGrounded()
@@ -352,6 +460,15 @@ namespace Velocity.Objects
 
 			//Cursor
 			drawSpriteNoZoom(spriteBatch, c, cursorSprite, new Vector2(ce.X, ce.Y));
+
+			//Logs
+			drawTextOnGui(spriteBatch, c, font, xspeeds.Average().ToString(), new Vector2(20, 0), Color.Black);
+			drawTextOnGui(spriteBatch, c, font, xdists.Average().ToString(), new Vector2(20, 30), Color.Black);
+			if (box != null)
+			{
+				drawTextOnGui(spriteBatch, c, font, box.xspeeds.Average().ToString(), new Vector2(120, 0), Color.Black);
+				drawTextOnGui(spriteBatch, c, font, box.xdists.Average().ToString(), new Vector2(120, 30), Color.Black);
+			}
 		}
 
 		#region Gun Control

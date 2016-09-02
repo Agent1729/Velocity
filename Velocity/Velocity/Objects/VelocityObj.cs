@@ -65,8 +65,11 @@ namespace Velocity.Objects
 
 			//x += xspeed * factor;
 			//y += yspeed * factor;
-			if (xspeed != 0 || yspeed != 0)
-				Move(xspeed * factor, yspeed * factor, true);
+			if (!hasMoved)
+			{
+				if (xspeed != 0 || yspeed != 0)
+					Move(xspeed * factor, yspeed * factor, true);
+			}
 
 			factorSet = false;
 			newFactor = 1;
@@ -90,6 +93,17 @@ namespace Velocity.Objects
 		}
 
 		public override bool isGrounded() { return false; }
+
+		public bool canPush(obj o, float spd)
+		{
+			VelocityObj other = (VelocityObj)o;
+			if (!other.canBePushed) return false;
+			if (pushForce >= other.inertia * other.gravFactor)
+				return true;
+			if (Math.Abs(mass * spd) >= other.inertia * other.gravFactor)
+				return true;
+			return false;
+		}
 
 		//protected override bool moveToOther(obj _b, float axspeed, float ayspeed)
 		//{
@@ -781,17 +795,17 @@ namespace Velocity.Objects
 			return new Vector2(movedx, movedy);
 		}
 
-		public override Vector2 Move(float mx, float my, bool actuallyMoveDeprecated)
+		public override Vector2 Move(float mx, float my, bool setHasMovedTrue)
 		{
-			return MoveHelped(mx, my, actuallyMoveDeprecated, 0, 0);
+			return MoveHelped(mx, my, setHasMovedTrue, 0, 0);
 		}
 
-		public override Vector2 Move(float mx, float my, bool actuallyMoveDeprecated, int layers, int moveLayers)
+		public override Vector2 Move(float mx, float my, bool setHasMovedTrue, int layers, int moveLayers)
 		{
-			return MoveHelped(mx, my, actuallyMoveDeprecated, layers, moveLayers);
+			return MoveHelped(mx, my, setHasMovedTrue, layers, moveLayers);
 		}
 
-		public override Vector2 MoveHelped(float mx, float my, bool actuallyMove, int layers, int moveLayers)
+		public override Vector2 MoveHelped(float mx, float my, bool setHasMovedTrue, int layers, int moveLayers)
 		{
 			float dampen = .95f;
 			float prex = x;
@@ -830,6 +844,11 @@ namespace Velocity.Objects
 			//setRegions() at end of everything?
 
 			if (layers > 2)
+			{
+				x += 0;
+				return new Vector2(0, 0);
+			}
+			if(moveLayers > 2)
 			{
 				x += 0;
 				return new Vector2(0, 0);
@@ -877,27 +896,7 @@ namespace Velocity.Objects
 				List<obj> postColls = level.collisionList(this, true);
 				if (!noColls(postColls))
 					x += 0;
-				List<obj> colls2 = level.collisionListAtRelative(this, 0, 0, true);
-				float postx = x;
-				float posty = y;
-				x = prex;
-				y = prey;
-				setRegions();
-				List<obj> colls3b = level.collisionListAtRelative(this, 0, 0, true);
-				List<obj> colls3a = level.collisionListAtRelative(this, mx, my, true);
-				x += 0;
-				setRegions();
-				List<obj> colls3b2 = level.collisionListAtRelative(this, 0, 0, true);
-				List<obj> colls3a2 = level.collisionListAtRelative(this, mx, my, true);
-				x += 0;
-				List<obj> collsN;
-				collsN = level.collisionList(this, true);
-				collsN = colls.Union(level.collisionListAtRelative(this, mx, my, true)).ToList();
-				x += 0;
-
-
-				x = postx;
-				y = posty;
+				if (setHasMovedTrue) hasMoved = true;
 				return new Vector2(mx, my);
 			}
 
@@ -982,7 +981,10 @@ namespace Velocity.Objects
 				float mx2 = 0;
 				float my2 = 0;
 				Vector2 moved2 = new Vector2(0, 0);
-				if (!bestO.canBePushed)
+				float spd = 0;
+				if (ang == 0) spd = yspeed;
+				if (ang == 1) spd = xspeed;
+				if (!canPush(bestO, spd))
 				{
 					if (ang == 0)	//Horizontal hit
 					{
@@ -1000,50 +1002,152 @@ namespace Velocity.Objects
 						my2 = my * (1.0f - pct);
 					}
 					if ((mx2 != 0 || my2 != 0))
-						moved2 = MoveHelped(mx2, my2, true, layers + 1, moveLayers);
+						moved2 = MoveHelped(mx2, my2, false, layers + 1, moveLayers);
 					List<obj> postColls2 = level.collisionList(this, true);
 					if (!noColls(postColls2))
 						x += 0;
 				}
-				else	//Other can't be pushed
+				else	//Other can be pushed
 				{
-					Vector2 pushed = new Vector2(0, 0);
-					if(ang == 0)
+					if (!objsPushed.Contains(bestO))
 					{
-						mx2 = mx * (1.0f - pct) * dampen;
-						my2 = my * (1.0f - pct) * dampen;
-						pushed = bestO.MoveHelped(0, my2, true, layers, moveLayers + 1);
-						moved2 = MoveHelped(mx2, pushed.Y, true, layers, moveLayers + 1);
-						if (Math.Abs(pushed.Y) < Math.Abs(my2 * dampen))
+						objsPushed.Add(bestO);
+						if (bestO.objType == "Box")
+							doCollision(bestO, true);
+						Vector2 pushed = new Vector2(0, 0);
+						if (ang == 0)
 						{
-							yspeed = 0;
-							dmoving = false;
-							umoving = false;
-							isGrounded();
+							if (!objsPushedLast.Contains(bestO))
+							{
+								//Didn't push last time, use inelastic collision with momentum
+								/*
+								mx2 = mx * (1.0f - pct) * dampen;
+								my2 = my * (1.0f - pct) * dampen;
+								pushed = bestO.MoveHelped(0, my2, false, layers, moveLayers + 1);
+								moved2 = MoveHelped(mx2, pushed.Y, false, layers, moveLayers + 1);//*/
+								VelocityObj vBestO = (VelocityObj)bestO;
+								float totalMomentum = mass * yspeed + vBestO.mass * vBestO.yspeed;
+								float totalMass = mass + vBestO.mass;
+								float finalSpeed = totalMomentum / totalMass;
+								if (canBePushed)
+									yspeed = finalSpeed;
+								vBestO.yspeed = finalSpeed;
+								pushed = bestO.MoveHelped(vBestO.xspeed * factor, vBestO.yspeed * factor, true, layers, moveLayers + 1);
+								bestO.ticksSincePushed = 0;
+
+								//if (mx != 0) mx2 = xspeed / mx * (1.0f - pct) * dampen;
+								//if (my != 0) my2 = yspeed / my * (1.0f - pct) * dampen;
+								//moved2 = MoveHelped(mx2, my2, true, layers, moveLayers + 1);
+
+								//Method 2
+								CollisionInfo pushedCI = findClosestCollisionsPercent(xspeed, yspeed, vBestO);
+								moved2 = MoveToCI(xspeed, yspeed, pushedCI);
+
+								//Method 3
+								//if (mx != 0) mx2 = xspeed / mx * (1.0f - pct);
+								//if (my != 0) my2 = yspeed / my * (1.0f - pct);
+								//moved2 = Move(mx2 * factor, my2 * factor, true, layers, moveLayers + 1);
+
+								if (Math.Abs(pushed.Y) < Math.Abs(my2 * dampen))
+								{
+									yspeed = 0;
+									dmoving = false;
+									umoving = false;
+									isGrounded();
+								}
+							}
+							else
+							{
+								//We pushed this last round too, use F=ma
+								//TODO (copy paste from below)
+							}
+							//Now move the rest of the x distance if applicable
+							//TODO
 						}
+						if (ang == 1)
+						{
+							VelocityObj vBestO = (VelocityObj)bestO;
+							if (!objsPushedLast.Contains(bestO))
+							{
+								float totalMomentum = mass * xspeed + vBestO.mass * vBestO.xspeed;
+								float totalMass = mass + vBestO.mass;
+								float finalSpeed = totalMomentum / totalMass;
+								if (canBePushed)
+									xspeed = finalSpeed;
+								vBestO.xspeed = finalSpeed;
+								pushed = bestO.MoveHelped(vBestO.xspeed * vBestO.factor, vBestO.yspeed * vBestO.factor, true, layers, moveLayers + 1);
+								bestO.ticksSincePushed = 0;
+
+								//if (mx != 0) mx2 = xspeed / mx * (1.0f - pct) * dampen;
+								//if (my != 0) my2 = yspeed / my * (1.0f - pct) * dampen;
+								//moved2 = MoveHelped(mx2, my2, true, layers, moveLayers + 1);
+
+								//Method 2
+								CollisionInfo pushedCI = findClosestCollisionsPercent(xspeed, yspeed, vBestO);
+								moved2 = MoveToCI(xspeed, yspeed, pushedCI);
+
+								//Method 3
+								//if (mx != 0) mx2 = xspeed / mx * (1.0f - pct);
+								//if (my != 0) my2 = yspeed / my * (1.0f - pct);
+								//moved2 = Move(mx2 * factor, my2 * factor, true, layers, moveLayers + 1);
+
+								/*
+								mx2 = mx * (1.0f - pct) * dampen;
+								my2 = my * (1.0f - pct) * dampen;
+								pushed = bestO.MoveHelped(mx2, 0, false, layers, moveLayers + 1);
+								moved2 = MoveHelped(pushed.X, my2, false, layers, moveLayers + 1);//*/
+								if (Math.Abs(pushed.X) < Math.Abs(mx2 * dampen))
+								{
+									xspeed = 0;
+									lmoving = false;
+									rmoving = false;
+								}
+							}
+							else
+							{
+								//We pushed this last round too, use F=ma
+								float accel = pushForce * fmaPushMod / bestO.mass;
+								if (mx > 0)
+								{
+									bestO.xspeed += accel * factor;
+									if (bestO.xspeed > xspeed) bestO.xspeed = xspeed;
+								}
+								if (mx < 0)
+								{
+									bestO.xspeed -= accel * factor;
+									if (bestO.xspeed < xspeed) bestO.xspeed = xspeed;
+								}
+								pushed = bestO.MoveHelped(vBestO.xspeed * vBestO.factor, vBestO.yspeed * vBestO.factor, true, layers, moveLayers + 1);
+								bestO.ticksSincePushed = 0;
+								//Method 2
+								//CollisionInfo pushedCI = findClosestCollisionsPercent(xspeed, yspeed, vBestO);
+								//moved2 = MoveToCI(xspeed, yspeed, pushedCI);
+								//Method 3
+								if (mx != 0) mx2 = xspeed / mx * (1.0f - pct);
+								if (my != 0) my2 = yspeed / my * (1.0f - pct);
+								moved2 = Move(mx2 * factor, my2 * factor, true, layers, moveLayers + 1);
+							}
+							//Now move the rest of the y distance if applicable
+							//TODO
+						}
+						List<obj> postColls2 = level.collisionList(this, true);
+						if (!noColls(postColls2))
+							x += 0;
 					}
-					if(ang == 1)
+					else
 					{
-						mx2 = mx * (1.0f - pct) * dampen;
-						my2 = my * (1.0f - pct) * dampen;
-						pushed = bestO.MoveHelped(mx2, 0, true, layers, moveLayers + 1);
-						moved2 = MoveHelped(pushed.X, my2, true, layers, moveLayers + 1);
-						if (Math.Abs(pushed.X) < Math.Abs(mx2 * dampen))
-						{
-							xspeed = 0;
-							lmoving = false;
-							rmoving = false;
-						}
-					}
-					List<obj> postColls2 = level.collisionList(this, true);
-					if (!noColls(postColls2))
+						//We already pushed this object this tick...
+						//Probably in some glitched infinite loop
 						x += 0;
+					}
 				}
+				if (setHasMovedTrue) hasMoved = true;
 				return (new Vector2(mx * pct, my * pct) + moved2) * dampen;
 			}
 
 
 			setRegions();
+			if (setHasMovedTrue) hasMoved = true;
 			return new Vector2();
 		}
 
@@ -1078,8 +1182,19 @@ namespace Velocity.Objects
 				pct = my2 / my;
 				mx2 = pct * mx;
 			}
-			x += mx2 * movetocidampen;
-			y += my2 * movetocidampen;
+
+			if (ci.side == " " && ci.pct == 1)
+			{
+				mx2 = mx;
+				my2 = my;
+				x += mx2;
+				y += my2;
+			}
+			else
+			{
+				x += mx2 * movetocidampen;
+				y += my2 * movetocidampen;
+			}
 			return new Vector2(mx2, my2);
 		}
 
@@ -1202,6 +1317,9 @@ namespace Velocity.Objects
 			}
 
 			//Unimplemented? Else it's a bug :/
+			//For now assume no collision
+			return new CollisionInfo(false, o, " ", new Vector2(-1, -1), 1);
+
 			//return new Vector2(-1, -1);
 			return new CollisionInfo(false);
 		}

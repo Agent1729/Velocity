@@ -47,6 +47,7 @@ namespace Velocity.Objects
 			base_width = 16; base_height = 16;
 			width = base_width; height = base_height;
 			depth = -5;
+			mass = 9999;
 			collisionStatic = false;
 			isSolid = true;
 			//isSolid = false;
@@ -115,7 +116,7 @@ namespace Velocity.Objects
 					foreach (obj o in objsToMove)
 					{
 						if (ryspeed >= 0)
-							o.Move(startCoord - x2, 0, true);
+							o.Move(startCoord - x2, 0, false);
 					}
 					rxspeed *= -1;
 				}
@@ -126,7 +127,7 @@ namespace Velocity.Objects
 					foreach (obj o in objsToMove)
 					{
 						if (ryspeed >= 0)
-							o.Move(startCoord + moveDist - x2, 0, true);
+							o.Move(startCoord + moveDist - x2, 0, false);
 					}
 					rxspeed *= -1;
 				}
