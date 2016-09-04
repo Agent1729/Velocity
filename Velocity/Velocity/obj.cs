@@ -138,7 +138,8 @@ namespace Velocity
 		{
 			//x += xspeed;
 			//y += yspeed;
-			Move(xspeed, yspeed, true);
+			if (xspeed != 0 || yspeed != 0)
+				Move(xspeed, yspeed, true);
 		}
 
 		public void endTick() { doEndTick(); }
@@ -152,7 +153,7 @@ namespace Velocity
 
 		public virtual bool isGrounded() { return false; }
 
-		public virtual Vector2 Move(float mx, float my, bool actuallyMove)
+		public virtual Vector2 MoveOld(float mx, float my, bool actuallyMove)
 		{
 			float ix = x, iy = y;
 			List<obj> colls;
@@ -327,6 +328,26 @@ namespace Velocity
 
 			setRegions();
 			return new Vector2(movedx, movedy);
+		}
+
+		public virtual Vector2 Move(float mx, float my, bool actuallyMoveDeprecated)
+		{
+			return new Vector2();
+		}
+
+		public virtual Vector2 Move(float mx, float my, bool actuallyMoveDeprecated, int layers, int movedLayers)
+		{
+			return new Vector2();
+		}
+
+		public virtual Vector2 Move2(float mx, float my, bool asdlkfj)
+		{
+			return new Vector2();
+		}
+
+		public virtual Vector2 MoveHelped(float mx, float my, bool asdlkfj, int layers, int movedLayers)
+		{
+			return new Vector2();
 		}
 
 		#region Controls
@@ -559,6 +580,11 @@ namespace Velocity
 			spriteBatch.Draw(_sprite, (position - c.XY) / c.zoom, null, Color.White, 0, new Vector2(0, 0), 1, SpriteEffects.None, 0);
 		}
 
+		protected void drawSpriteNoZoomOnGui(SpriteBatch spriteBatch, Camera c, Texture2D _sprite, Vector2 position)
+		{
+			spriteBatch.Draw(_sprite, position, null, Color.White, 0, new Vector2(0, 0), 1, SpriteEffects.None, 0);
+		}
+
 		protected void drawLine(SpriteBatch spriteBatch, Camera c, Texture2D pxl, Vector2 p1, Vector2 p2)
 		{
 			float ang, dist;
@@ -578,6 +604,11 @@ namespace Velocity
 		protected void drawText(SpriteBatch spriteBatch, Camera c, SpriteFont sf, string s, Vector2 position, Color color)
 		{
 			spriteBatch.DrawString(sf, s, (position - c.XY) / c.zoom, color, 0, new Vector2(0, 0), 1, SpriteEffects.None, 0);
+		}
+
+		protected void drawTextOnGui(SpriteBatch spriteBatch, Camera c, SpriteFont sf, string s, Vector2 position, Color color)
+		{
+			spriteBatch.DrawString(sf, s, position, color, 0, new Vector2(0, 0), 1, SpriteEffects.None, 0);
 		}
 
 		protected virtual void getPaintColor() { }
@@ -831,19 +862,84 @@ namespace Velocity
 
 		public static bool linesCollide(float ax1, float ay1, float ax2, float ay2, float bx1, float by1, float bx2, float by2)
 		{
-			float denominator = ((ax2 - ax1) * (by2 - by1)) - ((ay2 - ay1) * (bx2 - bx1));
-			float numerator1 = ((ay1 - by1) * (bx2 - bx1)) - ((ax1 - bx1) * (by2 - by1));
-			float numerator2 = ((ay1 - by1) * (ax2 - ax1)) - ((ax1 - bx1) * (ay2 - ay1));
+			//float denominator = ((ax2 - ax1) * (by2 - by1)) - ((ay2 - ay1) * (bx2 - bx1));
+			//float numerator1 = ((ay1 - by1) * (bx2 - bx1)) - ((ax1 - bx1) * (by2 - by1));
+			//float numerator2 = ((ay1 - by1) * (ax2 - ax1)) - ((ax1 - bx1) * (ay2 - ay1));
 
-			// Detect coincident lines (has a problem, read below)
-			// (Doesn't work if lines are coincident but don't overlap?)
-			if (denominator == 0)
-				return ((numerator1 == 0) && (numerator2 == 0));
+			//// Detect coincident lines (has a problem, read below)
+			//// (Doesn't work if lines are coincident but don't overlap?)
+			//if (denominator == 0)
+			//	return ((numerator1 == 0) && (numerator2 == 0));
 
-			float r = numerator1 / denominator;
-			float s = numerator2 / denominator;
+			//float r = numerator1 / denominator;
+			//float s = numerator2 / denominator;
 
-			return ((r >= 0 && r <= 1) && (s >= 0 && s <= 1));
+			//return ((r >= 0 && r <= 1) && (s >= 0 && s <= 1));
+
+
+
+			float slopea = (ay2 - ay1) / (ax2 - ax1);
+			float slopeb = (by2 - by1) / (bx2 - bx1);
+			//Discount coincident lines or points, only counting hard intersections at a single point
+			if (slopea == slopeb)
+			{
+				return false;
+				//Exception? Let's count horizontal and vertical coincident lines, as long as they're not just having one point in common
+				if(slopea==0&&ay1==by1)
+				{
+					if (isBetween(ax1, bx1, bx2) || isBetween(ax2, bx1, bx2) || isBetween(bx1, ax1, ax2) || isBetween(bx2, ax1, ax2))
+						return true;
+				}
+				if(float.IsInfinity(slopea)&&ax1==bx1)
+				{
+					if (isBetween(ay1, by1, by2) || isBetween(ay2, by1, by2) || isBetween(by1, ay1, ay2) || isBetween(by2, ay1, ay2))
+						return true;
+				}
+				return false;
+			}
+			if ((ax1 == bx1 && ay1 == by1) ||
+				(ax1 == bx2 && ay1 == by2) ||
+				(ax2 == bx1 && ay2 == by1) ||
+				(ax2 == bx2 && ay2 == by2))
+				return false;
+			double xintersection = -999999;
+			double yintersection = -999999;
+			if(float.IsInfinity(slopea))
+			{
+				xintersection = (double)ax1;
+				yintersection = (double)slopeb * ((double)xintersection - (double)bx1) + (double)by1;
+				if(slopeb==0)
+					return isBetween((double)by1, (double)ay1, (double)ay2) && isBetween((double)ax1, (double)bx1, (double)bx2);
+				return (isBetween(yintersection, (double)ay1, (double)ay2) && isBetween(yintersection, (double)by1, (double)by2));
+			}
+			else if (float.IsInfinity(slopeb))
+			{
+				xintersection = (double)bx1;
+				yintersection = (double)slopea * ((double)xintersection - (double)ax1) + (double)ay1;
+				if (slopea == 0)
+					return isBetween((double)ay1, (double)by1, (double)by2) && isBetween((double)bx1, (double)ax1, (double)ax2);
+				return (isBetween(yintersection, (double)ay1, (double)ay2) && isBetween(yintersection, (double)by1, (double)by2));
+			}
+			else
+			{
+				xintersection = ((double)slopea * (double)ax1 - (double)slopeb * (double)bx1 - (double)ay1 + (double)by1) / ((double)slopea - (double)slopeb);
+				return isBetween(xintersection, (double)ax1, (double)ax2) && isBetween(xintersection, (double)bx1, (double)bx2);
+			}
+
+			return false;
+		}
+
+		public static bool isBetween(float n, float a, float b)
+		{
+			if (n < a && n > b) return true;
+			if (n > a && n < b) return true;
+			return false;
+		}
+		public static bool isBetween(double n, double a, double b)
+		{
+			if (n < a && n > b) return true;
+			if (n > a && n < b) return true;
+			return false;
 		}
 
 		public static Vector2 lineCollisionPoint(float ax1, float ay1, float ax2, float ay2, float bx1, float by1, float bx2, float by2)
@@ -868,7 +964,15 @@ namespace Velocity
 			}
 
 			if (line1Vert && line2Vert)
-				return new Vector2(ax1, ay1);
+			{
+				if ((ay1 <= by1 && ay1 >= by2) || (ay1 <= by2 && ay1 >= by1))
+					return new Vector2(ax1, ay1);
+				if ((ay2 <= by1 && ay2 >= by2) || (ay2 <= by2 && ay2 >= by1))
+					return new Vector2(ax2, ay2);
+				if ((by1 <= ay1 && by1 >= ay2) || (by1 <= ay2 && by1 >= ay1))
+					return new Vector2(bx1, by1);
+				return new Vector2(bx2, by2);
+			}
 
 			if(!line1Vert && !line2Vert)
 			{
@@ -922,6 +1026,39 @@ namespace Velocity
 
 			return Dir.Left;
 		}//*/
+	}
+
+	public struct CollisionInfo
+	{
+		public bool collides;
+		public String side;
+		public Vector2 point;
+		public obj other;
+		public float pct;
+
+		public CollisionInfo(bool fals)
+		{
+			collides = false;
+			other = null;
+			side = "";
+			point = new Vector2(-1, -1);
+			pct = 0;
+		}
+		public CollisionInfo(bool _collides, obj _other, String _side, Vector2 _point, float _pct)
+		{
+			collides = _collides;
+			other = _other;
+			side = _side;
+			point = _point;
+			pct = _pct;
+		}
+
+		public float getSlope()
+		{
+			if (side == "l" || side == "r") return 1;
+			if (side == "u" || side == "d") return 0;
+			return 0;
+		}
 	}
 
 	//public enum Dir { Left, Right, Up, Down };

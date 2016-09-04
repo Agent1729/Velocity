@@ -15,6 +15,9 @@ namespace Velocity.Objects
 {
 	public class Wall : VelocityObj
 	{
+		private SpriteFont font;
+		public int id;
+
 		public Wall(float x, float y) : base(x, y) { }
 
 		protected override void init()
@@ -26,13 +29,34 @@ namespace Velocity.Objects
 			depth = 5;
 			collisionStatic = true;
 			isSolid = true;
-			takesControls = false;
+			takesControls = true;
 			canBePushed = false;
 			hasGravity = false;
 			canAbsorb = false;
 			hasBeenFrictioned = false;
 		}
 
+		protected override void doLoadTexture()
+		{
+			mainSprite = SpriteManager.getSprite(mainSpriteName);
+
+			id = level.getNextWallID();
+
+			font = FontManager.getFont("Font1");
+		}
+
 		//protected override void dotick() { }
+
+		protected override void doDraw(SpriteBatch spriteBatch, Camera c)
+		{
+			base.doDraw(spriteBatch, c);
+			id = level.getObjNum(this);
+			drawText(spriteBatch, c, font, id.ToString(), new Vector2(x-8, y-16), Color.Black);
+		}
+
+		protected override void doshiftPressed(object lvl)
+		{
+			//id = level.getObjNum(this);
+		}
 	}
 }

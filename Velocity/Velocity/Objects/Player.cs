@@ -133,11 +133,13 @@ namespace Velocity.Objects
 				if (gravFactor > 0)
 				{
 					yspeed -= jumpSpeed;
+					y -= .01f;
 					umoving = true;
 				}
 				if (gravFactor < 0)
 				{
 					yspeed += jumpSpeed;
+					y += .01f;
 					dmoving = true;
 				}
 			}
@@ -229,8 +231,8 @@ namespace Velocity.Objects
 				gravFactor = newGravFactor;
 			}
 
-			isGrounded();
-			if (hasGravity)
+			//isGrounded();
+			if (hasGravity&&!isGrounded())
 			{
 				if (!factorAffectsGrav)
 					yspeed += gravity * factor * gravFactor;
@@ -273,7 +275,7 @@ namespace Velocity.Objects
 		{
 			List<obj> colls = level.collisionListAtRelative(this, 0, obj.Sign(gravFactor), true);
 			
-			if (colls.Count > 0)
+			if (!noColls(colls))
 			{
 				if (yspeed * gravFactor > 0)
 					yspeed = 0;

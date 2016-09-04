@@ -20,8 +20,12 @@ namespace Velocity.Levels
 	{
 		protected override void doInitialize(VelocityGame game)
 		{
+			//ISSUES:
+			//There's a glitch where stickynode4 sometimes regains its old vz
+
 			levelNum = 2;
 
+			addObj(game, new Wall(0, 50));
 			addObj(game, new Wall(50, 100));
 			addObj(game, new Wall(200, 200));
 			addObj(game, new Wall(300, 275));
@@ -29,14 +33,19 @@ namespace Velocity.Levels
 			//addObj(game, new Wall(-150, 270));
 			//addObj(game, new Wall(-175, 200));
 			addObj(game, new MovingPlatform(450, 150, true, 3, 150));
-			addObj(game, new MovingPlatform(0, 100, false, 3, 364-64));
+			addObj(game, new MovingPlatform(0, 150, false, 3, 364-64-50));
 
 			addObj(game, new Wall(300, 150));
-			//addObj(game, new Box(300, 100));
+			addObj(game, new Box(300, 100));
 			VelocityZone v = (VelocityZone)addObj(game, new VelocityZone(200, 350));
 
 			Player p = (Player)addObj(game, new Player(0, 0, 1, v));
 			p.setGunsOwned(true);
+
+			addObj(game, new Wall(300, 350));
+			addObj(game, new Box(250, 370));
+			addObj(game, new Wall(400, 464 - 32));
+			addObj(game, new Wall(400, 464 - 32 * 2));
 
 			drawWallLine(game, 16, 464, 16, true);
 			drawWallLine(game, 400, 200, 3, false);

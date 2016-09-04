@@ -31,6 +31,8 @@ namespace Velocity
 		private char pauseResumeState = 'r';
 		private char restartState = 'n';
 
+		public int wallID = 0;
+
 		public int regionSize = 100;
 		public int regionsX = 7;
 		public int regionsY = 5;
@@ -40,7 +42,8 @@ namespace Velocity
 
 		int debugTest = 0;
 
-		List<obj> objs = new List<obj>();
+		//Shouldn't be public
+		public List<obj> objs = new List<obj>();
 		List<obj> objsToAdd = new List<obj>();
 		List<obj> objsToRemove = new List<obj>();
 
@@ -714,13 +717,17 @@ namespace Velocity
 				if (BB.collides(bbAt, j.bb))
 					colls.Add(j);
 			}//*/
-			foreach (Region r in i.myRegions)
-			{
-				List<obj> colls2 = collisionListAtRelative(i, atx, aty, solid, r.objs);
-				foreach (obj j in colls2)
-					if (!colls.Contains(j))
-						colls.Add(j);
-			}
+			//foreach (Region r in i.myRegions)
+			//{
+			//	List<obj> colls2 = collisionListAtRelative(i, atx, aty, solid, r.objs);
+			//	foreach (obj j in colls2)
+			//		if (!colls.Contains(j))
+			//			colls.Add(j);
+			//}
+			List<obj> colls2 = collisionListAtRelative(i, atx, aty, solid, objs);
+			foreach (obj j in colls2)
+				if (!colls.Contains(j))
+					colls.Add(j);
 
 			return colls;
 		}
@@ -916,6 +923,22 @@ namespace Velocity
 		{
 			restartTime = gameTicks + waitTime;
 			restartState = 'r';
+		}
+
+
+
+		public int getNextWallID()
+		{
+			wallID++;
+			return wallID - 1;
+		}
+
+		public int getObjNum(obj o)
+		{
+			for (int i = 0; i < objs.Count; i++)
+				if (objs[i] == o)
+					return i;
+			return -1;
 		}
 	}
 }

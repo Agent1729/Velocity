@@ -61,8 +61,8 @@ namespace Velocity.Objects
 				gravFactor = newGravFactor;
 			}
 
-			isGrounded();
-			if (hasGravity)
+
+			if (hasGravity && !isGrounded())
 			{
 				if (!factorAffectsGrav)
 					yspeed += gravity * factor * gravFactor;
@@ -72,6 +72,7 @@ namespace Velocity.Objects
 
 			capSpeed(terminalVelocity);
 			Move(xspeed * factor, yspeed * factor, true);
+			setRegions();
 
 			factorSet = false;
 			newFactor = 1;
@@ -88,7 +89,7 @@ namespace Velocity.Objects
 		{
 			List<obj> colls = level.collisionListAtRelative(this, 0, obj.Sign(gravFactor), true);
 
-			if (colls.Count > 0)
+			if (!noColls(colls))
 			{
 				if (yspeed * gravFactor > 0)
 					yspeed = 0;
